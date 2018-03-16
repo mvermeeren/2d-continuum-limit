@@ -1,15 +1,15 @@
 # 2d-continuum-limit
 A SageMath implementation of continuum limits of 2-dimensional lattice equations.
 
-This is an implementation of the continuum limit for two-dimensional 
-multidimensionally consistent lattice equations and their pluri-Lagrangian
-structure.
+This is an implementation of the continuum limit for two-dimensional multidimensionally consistent lattice equations and their pluri-Lagrangian structure.
 
 The continuum limit procedure is discussed in
+
 	Mats Vermeeren, “Continuum limits of pluri-Lagrangian systems” 
 	arxiv.org/abs/1706.06830
 
 This package consists of the following files:
+
 	* 2d.sage (Main)
 	* 2d_auxiliaries.sage
 	* 2d_clean_lagrangian.sage
@@ -20,9 +20,11 @@ This package consists of the following files:
 	* weierstrass.py
 
 This software is written by
+
 	Mats Vermeeren
 	TU Berlin
 	vermeeren@math.tu-berlin.de
+	
 and published under the MIT License (see 'LICENCE' for more details)
 
 
