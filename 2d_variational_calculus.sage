@@ -68,24 +68,27 @@ def varder(dir,func,var,component=1):
     return result
     
 
-@parallel
-def pcheck(i,j,func):
-	out = expand(replace(func))
-	if out == 0:
-		return 0
-	else:
-		return cleantrig(out).simplify_rational()
-	    #return trig_to_exp(out).simplify_full()
+#@parallel
+#def pcheck(i,j,func):
+#	out = expand(replace(func))
+#	if out == 0:
+#		return 0
+#	else:
+#		return cleantrig(out).simplify_rational()
+#	    #return trig_to_exp(out).simplify_full()
 
 def check(matrix,message="All entries = 0 mod eqns",verbose=True):
 	size = matrix.dimensions()[1]
-	checkgen = pcheck(flatten([[(i,j,matrix[i-1,j-1]) for j in [1..size]] for i in [1..size]],max_level=1))
-    
-    # checkgen = flatten([[ [[[i,j]],pcheck(i,j,matrix[i-1,j-1])] for j in [1..size]] for i in [1..size]] ,max_level=1) ### non-parallel fix
+	#checkgen = pcheck(flatten([[(i,j,matrix[i-1,j-1]) for j in [1..size]] for i in [1..size]],max_level=1))
     
 	remainder = 0*copy(matrix)
-	for i in checkgen:
-		remainder[i[0][0][0]-1,i[0][0][1]-1] = i[1]
+	for i in [1..size]:
+		for j in [1..size]:
+			out = expand(replace(matrix[i-1,j-1]))
+			if out == 0:
+				remainder[i-1,j-1] = 0
+			else:
+				remainder[i-1,j-1] = cleantrig(out).simplify_rational()
 	if verbose:
 		if remainder == 0*remainder:
 			textadd(message)
@@ -116,7 +119,6 @@ def varders(matrix,index,edge=False,component=1):
 	for i in vgen:
 		out[i[0][0][0]-1,i[0][0][1]-1] = i[1]
 	return out
-
 ### take difference of rows
 def diff_in_columns(matrix):
 	out = copy(matrix)
@@ -130,6 +132,7 @@ def diff_in_columns(matrix):
 	return out
 
 ### calculate multi-time EL expressions of 1st kind
+@parallel
 def elplane(matrix,index,component=1):
 	global warning
 	relevantmatrix = copy(matrix)
@@ -146,6 +149,7 @@ def elplane(matrix,index,component=1):
 	#return warning
 
 ### calculate multi-time EL expressions of 2nd kind
+@parallel
 def eledge(matrix,index,component=1):
 	global warning
 	relevantmatrix = copy(matrix)
@@ -187,12 +191,12 @@ def elcheck(matrix):
 	
 	if elcheckdepth > 0:
 		textadd("Deep EL check...")
-		if elcheckdepth > 2:
-			print("elcheckdepth = " + str(elcheckdepth) + ". This could take a while...")
+		#if elcheckdepth > 2:
+		#	print("elcheckdepth = " + str(elcheckdepth) + ". This could take a while...")
 		for index in indices(elcheckdepth,numvars):
 			for component in [1..components]:
 				elplane(triang,index,component)
-		print("Half way there...")
+		#print("Half way there...")
 		for index in indices(elcheckdepth-1,numvars):
 			for component in [1..components]:
 				eledge(matrix,index,component)

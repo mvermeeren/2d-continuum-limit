@@ -51,7 +51,7 @@ def double0(func,i,j):
 	out = 0
 	
 	#substitute double zeros
-	if switch == 'BSQ':
+	if secondorder > 0:
 		cutoff = 2*(numvars)
 	else:
 		cutoff = 2*(numvars)-1

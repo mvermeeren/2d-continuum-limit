@@ -1,85 +1,80 @@
 #!/usr/bin/env sage
 
-### DATA INPUT ###
-
-### LATTICE EQUATION
-
-switch = 'H1'
-#OPTIONS - with Lagrangian: 
-#lin,
-#Q1, Q2, Q3, Q4w
-#H1, H3sin (=H3tan),
-#BSQ, GD4skew
-#OPTIONS - equation only:
-#H3
-#Q4rat
-
-var('delta', latex_name='\\delta')
-delta = 0 # Specify parameter (commonly 0 or 1)
-
-### DIMENSION OF MULTI-TIME
-numvars = 3
-includeeven = True
-
-### LAGRANGIANS
-onlyequation = False # Forget about the Lagrangians?
-autosimplify = True # Simplify Lagrangians?
-
-### CHECKS
-double_eqn_exp = True # Calculate and check full array of equations?
-# Not necessary if multidimensional consistency is known
-# Time-intensive as code has not been optimized for speed
-
-negdepth = 3 #How deep to check for negative order terms
-
-elcheckdepth = numvars #To which extent to verify the EL equations
-#-1 for none
-#0 for quick
-#[1..numvars+1] to specify order of multi-indeces to check
-#Note: this does not check the 'corner equations' involving 3 coefficients.
-
-checkcomm = True #Explicitly verify commutativity?
-
-### REQUESTED OUTPUT
-viewpdf = True # Let Tex built output pdf
-vieweqnarray = False # Output the double series expansion of the quad equation
-viewldisc = False # Output the series expansion of the Lagrangian
-viewlpluri = False # Output the Lagrangian 2-form before simplification
-viewELeqs = False # Print the first few EL equations even if they are verified
-
-### END OF DATA INPUT ###
-
-#########################
-
-### import custom class for weierstrass elliptic functions
+### Import custom class for weierstrass elliptic functions
 from weierstrass import *
 
-### initialize variables
-w = walltime()
+### Load input
+load('2d_input.sage')
+
+### Initialize variables
 var('z')
-#var('g2')
 warning = False
 
-miwaconst = -2
-order = 2*numvars
-secondorder = False
 components = 1
+order = 2*numvars
+secondorder = 0
 lagnumvars = numvars
-if switch == 'BSQ':
-	order = 2*numvars+2
-	secondorder = True
-if switch == 'GD4' or switch == 'GD4skew' or switch == 'BSQ3':
-	miwaconst = 1
-	components = 3
-	order = 2*numvars+1 #check
-	secondorder = True
-	#lagnumvars = int( (numvars+1)/2 )
-	#lagnumvars = int( numvars/2+1 )
-	lagnumvars = numvars-1
+miwaconst = -2
+squarearray = True
+constraints = []
+imposedpdes = [{},{},{}] #needs at least as many entries as components
+
+if switch in multicompontent_list:
+	components = multicompontent_list[switch]
+if switch in order_list:
+	order = order_list[switch]
+if switch in secondorder_list:
+	secondorder = secondorder_list[switch]
+if switch in lagnumvars_list:
+	lagnumvars = lagnumvars_list[switch]
+if switch in miwa_list:
+	miwaconst = miwa_list[switch]
+if switch in squarearray_list:
+	squarearray = squarearray_list[switch]
+if switch in constraint_list:
+	constraints = constraint_list[switch]
+if switch in pde_list:
+	imposedpdes = pde_list[switch]
 	
-### Initialize output (to console, to pdf, and to text file)
-load('output.sage')
-textadd(switch + ('' if delta==0 else ' with parameter ' + str(delta) ) )
+### Open output files
+filename = switch
+if not(delta == 0):
+	filename += '-delta'
+filename += '-' + str(numvars)
+if includeeven:
+	filename += 'full'
+plaindoc = open('datadump/' + filename + '-plain','w')
+latexdoc = open('datadump/' + filename + '-tex','w')
+
+### print to latex and plaintext files
+### if all==True, print to console and pdf as well
+w = walltime()
+output = []
+
+def latexadd(eqn,all=True):
+	global output
+	print ""
+	print latex(eqn)
+	print ""
+	if all:
+		output += ['\\tiny ' + latex(eqn)]
+	if not(latexdoc.closed):
+		latexdoc.write(latex(eqn) + '\n\n')
+	if not(plaindoc.closed):
+		plaindoc.write(str(eqn) + '\n\n')
+		
+def textadd(string,all=True):
+	global output
+	print "%.2f" % (walltime(w)) + "s: " + string
+	if all:
+		output += [string]
+	if not(latexdoc.closed):
+		latexdoc.write(string + '\n\n')
+	if not(plaindoc.closed):
+		plaindoc.write(string + '\n\n')
+
+### Print mission statement
+textadd('EQUATION ' + switch + ('' if delta==0 else ' with parameter ' + str(delta) ) )
 
 ### Load custom methods
 load('2d_auxiliaries.sage')
@@ -87,16 +82,12 @@ load('2d_variational_calculus.sage')
 
 ### Compute limit of equations
 load('2d_equation_limit.sage')
-print walltime(w)
 
 if not(onlyequation):
 	### Compute limit of Lagrangians
 	load('2d_lagrangian_limit.sage')
-	print walltime(w)
-
 	### Eliminate alien derivatives
 	load('2d_clean_lagrangian.sage')
-	print walltime(w)
 
 ### Finalize output
 if warning:
@@ -109,7 +100,7 @@ if viewpdf:
 	view(output)
 
 ### If Lagrangians calculated and verified, write to file
-if (not(onlyequation) and (not(warning) and (elcheckdepth >= numvars))):
+if (not(onlyequation) and not(L==0) and (not(warning) and (elcheckdepth >= numvars))):
 	lagfile = open('lagrangians/' + filename + '-plain','w')
 	lagfile.write(str(pde))
 	lagfile.write('\n')
