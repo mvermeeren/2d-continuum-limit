@@ -14,9 +14,9 @@ This package consists of the following files:
 	* 2d_auxiliaries.sage
 	* 2d_clean_lagrangian.sage
 	* 2d_equation_limit.sage
+	* 2d_input.sage (Specify input here)
 	* 2d_lagrangian_limit.sage
 	* 2d_variational_calculus.sage
-	* output.sage
 	* weierstrass.py
 
 This software is written by
@@ -32,12 +32,13 @@ RUNNING THE PROGRAM
 
 Execute the file '2d.sage' in SageMath, preferably version 7.5.1 or higher
 
-The input has to be given within the '### DATA INPUT ###' section of '2d.sage'.
+All input is given in the file section of '2d_input.sage'.
+
 Most importantly the lattice equation needs to be specified by setting 'switch'
 and the dimension of the multi-time in which it is embedded needs to be specified 
-with 'numvars'
+with 'numvars'.
 
-Additional options are described within the file '2d.sage'
+Additional options are described in the comments of the file '2d_input.sage'.
 
 
 OUTPUT
@@ -52,6 +53,5 @@ written to a file in the subfolder 'lagrangians'
 
 ADDING MORE EQUATIONS OR LAGRANGIANS
 
-Custom equations and Lagrangians can be added in the files 
-'2d_equation_limit.sage' and  '2d_lagrangian_limit.sage' respectively. 
-A unique 'switch' should be introduced to select them.
+Custom equations and Lagrangians can be added in the method get_equation(switch)
+of the file '2d_input.sage'. A unique 'switch' should be introduced to select them.
