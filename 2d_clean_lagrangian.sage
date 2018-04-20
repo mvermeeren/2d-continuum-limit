@@ -75,13 +75,13 @@ def double0(func,i,j):
 	
 ### Check again for nonpositive order terms
 for i in [1-negdepth..0]:
-    test = expand(double0(dertovar(series.coefficient(b,i).series(a,lagnumvars).truncate()),0,0))
-    if not(test == 0):
-        warning = True
-        textadd("Term at order " + str(i) + "!")
-        latexadd(test)
+	test = expand(double0(dertovar(series.coefficient(b,i).series(a,lagnumvars).truncate()),0,0))
+	if not(test == 0):
+		warning = True
+		textadd("Term at order " + str(i) + "!")
+		latexadd(test.simplify_full())
 if ((warning == False) & (negdepth > 0)):
-    textadd("No nonpositive order terms detected")
+	textadd("No nonpositive order terms detected")
 
 ### Simplify by double zeroes
 cleantriang = copy(triang)
@@ -105,11 +105,11 @@ if autosimplify:
 ### calculate d( c1 dt1 + c2 dt2 + ... )
 corr = 0*copy(triang)
 for i in range(lagnumvars):
-    for j in [1..lagnumvars]:
-        if i < j:
-            corr[i-1,j-1] += vdiff(c[j-1],eval('t'+str(i)))
-        if i > j:
-            corr[j-1,i-1] += -vdiff(c[j-1],eval('t'+str(i)))
+	for j in [1..lagnumvars]:
+		if i < j:
+			corr[i-1,j-1] += vdiff(c[j-1],eval('t'+str(i)))
+		if i > j:
+			corr[j-1,i-1] += -vdiff(c[j-1],eval('t'+str(i)))
 
 ### Add d( c1 dt1 + c2 dt2 + ... )
 for i in [1..lagnumvars]:

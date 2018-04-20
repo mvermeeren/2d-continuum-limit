@@ -29,9 +29,9 @@ def dilogseries(func,truncorder): # expansion of Li2(exp(func))
 	
 ### Ui-U and Ui+U
 diff1 = dertovar( (ul(1,0)-ul(0,0)).series(a,lagnumvars+1).truncate() )
-diff2 = diff1.subs(a == b)
+diff2 = dertovar( (ul(0,1)-ul(0,0)).series(b,lagnumvars+1).truncate() )
 sum1 = dertovar( (ul(1,0)+ul(0,0)).series(a,lagnumvars+1).truncate() )
-sum2 = diff1.subs(a == b)
+sum2 = dertovar( (ul(0,1)+ul(0,0)).series(b,lagnumvars+1).truncate() )
 
 ### U1-U2
 diff12 = expand( dertovar( ul(1,0).series(a,lagnumvars+1).truncate() - ul(0,1).series(b,lagnumvars+1).truncate() )) 
@@ -179,7 +179,7 @@ for component in [1..components]:
 			if index[1] > 0:
 				lowest = 2
 		### Do replacement
-		if not(lowest == 1):
+		if lowest > 1:
 			lowindex = copy(index)
 			if component == secondorder and lowest == 2:
 				lowindex[lowest-1] += -2
@@ -190,10 +190,11 @@ for component in [1..components]:
 				rhs = replace(vdiff(pde[component-1][lowest].rhs(),deri(lowindex)))
 				allpde += [lhs == expand(cleantrig(rhs))]
 				
-	eqnarray = [replace(i) for i in eqnarray]
-	textadd("Iteration " + str(component))
-	for i in eqnarray:
-		latexadd(i,vieweqnarray_iterate)
+	if vieweqnarray_iterate:
+		eqnarray = [replace(i) for i in eqnarray]
+		textadd("Iteration " + str(component))
+		for i in eqnarray:
+			latexadd(i,vieweqnarray_iterate)
 
 ### Simplify the hierarchy
 for component in [1..components]:

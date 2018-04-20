@@ -95,7 +95,7 @@ lagnumvars_list = {'GD4': numvars-1, 'GD4skew': numvars-1}
 
 ### MIWA CONSTANT ###
 # Default: -2
-miwa_list = {'GD4': 1, 'GD4skew': 1}
+miwa_list = {'BSQ': -3, 'GD4': 1, 'GD4skew': 1}
 
 ### SQUARE ARRAY or TRIANGLE ###
 # Expand equations in square array or just a triangle?
@@ -114,7 +114,7 @@ constraint_list = {
 var('v_3,v_4,v_112,v_1,v_2,v_5,v_11,v_111,v_11111')
 var('v2_22,v1_11,v2_1,v2_11,v2_1111,v2_3,v2_111,v2_4')
 pde_list = {
-'BSQ': [{3: v_3 == 0, 4: v_4 == 4/3*v_112 - 4*v_1*v_2, 5: v_5 == -20/3*v_1^3 + 10*v_11^2 + 40/3*v_1*v_111 - 5/2*v_2^2 - 16/9*v_11111}],
+'BSQ': [{3: v_3 == 0, 4: v_4 == 3*v_112 - 6*v_1*v_2, 5: v_5 == -15*v_1^3 + 135/4*v_11^2 + 45*v_1*v_111 - 15/4*v_2^2 - 9*v_11111}],
 'GD4skew': [{},{2: v2_22 == - 4*v1_11*v2_1 - 8*v1_1*v2_11 - v2_1111, 3: v2_3 == -1/2*v2_111 - 3*v1_1*v2_1, 4:v2_4 == 0},{}]
 }
 

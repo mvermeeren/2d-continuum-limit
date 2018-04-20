@@ -100,7 +100,7 @@ if viewpdf:
 	view(output)
 
 ### If Lagrangians calculated and verified, write to file
-if (not(onlyequation) and not(L==0) and (not(warning) and (elcheckdepth >= numvars))):
+if (not(onlyequation) and not(str(L)=='0') and (not(warning) and (elcheckdepth >= numvars))):
 	lagfile = open('lagrangians/' + filename + '-plain','w')
 	lagfile.write(str(pde))
 	lagfile.write('\n')

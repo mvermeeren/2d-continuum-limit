@@ -2,10 +2,10 @@
 
 ### Initialize time variables, parameters, and field
 def range(t):
-    if includeeven:
-        return [1..t]
-    else:
-        return [1,3..t]
+	if includeeven:
+		return [1..t]
+	else:
+		return [1,3..t]
 
 var('a', latex_name='\\alpha')
 var('b', latex_name='\\beta')
@@ -17,35 +17,34 @@ function('u',nargs=numvars+1)
 
 ### the discrete field u_lattice
 def ul(n,m,component=1):
-    times = [eval('t' + str(i)) for i in [1..numvars]]
-    for i in [1..numvars]:
-        if includeeven | is_odd(i):
-            times[i-1] += miwaconst * (-1)^(i+1)* (n/i * a^i + m/i * b^i)
-    out = 'u('
-    for i in [1..numvars]:
-        out += 'times[' + str(i-1) + '],'
-    out = eval(out + str(component) + ')')
-    return out
+	times = [eval('t' + str(i)) for i in [1..numvars]]
+	for i in range(numvars):
+		times[i-1] += miwaconst * (-1)^(i+1)* (n/i * a^i + m/i * b^i)
+	out = 'u('
+	for i in [1..numvars]:
+		out += 'times[' + str(i-1) + '],'
+	out = eval(out + str(component) + ')')
+	return out
     
 ### Create admissible multi-indices [n_1,...n_numvars]
 def weight(multiindex):
-    return sum([i*multiindex[i-1] for i in [1..len(multiindex)]]) 
+	return sum([i*multiindex[i-1] for i in [1..len(multiindex)]]) 
 
-def indices_sub(wgt,len):
-    if len == 1:
-        yield [wgt]
-    else:
-        if includeeven | is_odd(len):
-            for i in [0..int(wgt/len)]:
-                for index in indices_sub(wgt-i*len,len-1):
-                    yield index+[i]
-        else:
-            for index in indices_sub(wgt,len-1):
-                yield index+[0]
+def indices_sub(wgt,length):
+	if length == 1:
+		yield [int(wgt)]
+	else:
+		if length in range(numvars):
+			for i in [0..int(wgt/length)]:
+				for index in indices_sub(wgt-i*length,length-1):
+					yield index+[int(i)]
+		else:
+			for index in indices_sub(wgt,length-1):
+				yield index+[0]
                 
-def indices(wgt,len):
+def indices(wgt,length):
     for w in [0..wgt]:
-        for index in indices_sub(w,len):
+        for index in indices_sub(w,length):
             yield index
             
 ### Initialize v-variables

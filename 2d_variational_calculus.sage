@@ -29,15 +29,9 @@ def vintegrate(func):
 						new = intcandidate*sin(v_)/cos(v_)/v_ * log(sin(eval(vstring+(i-1)*'1'+str(j))))
 					elif components == 1 and 'v_*wzeta(2*v_)' in str(intcandidate):
 						new = intcandidate/(v_*wzeta(2*v_)) * (1/2)*log(wsigma(2*v_)) #NOT ROBUST
-					#leave other elliptic terms be
-					#elif 'wzeta(2*v_)' in str(intcandidate):
-					#	new = 1
 					#highest derivative has to occur linearly
 					elif not(diff(dhighest, eval(vstring+i*'1'+str(j))) == 0):
 						new = 0
-					#else:
-					#	intcandidate = diff(t, eval('v_'+i*'1'+str(j))) * eval('v_'+(i-1)*'1'+str(j))
-					#handle rational derivatives
 					else:
 						newterms = summands(intcandidate)
 						for term in newterms:
@@ -52,35 +46,24 @@ def vintegrate(func):
 
 #deletes powers of parameters higher than truncorder
 def killpowers(f,truncorder=numvars):
-	return f.subs([a^(truncorder+i)==0 for i in [1..truncorder]]).subs([b^(truncorder+i)==0 for i in [1..truncorder]])
+	return f.subs([a^(truncorder+i)==0 for i in [1..truncorder+1]]).subs([b^(truncorder+i)==0 for i in [1..truncorder+1]])
 
 ### variational derivative in terms of v-variables
 var('target')
 def varder(dir,func,var,component=1):
-    result = 0
-    freeorder = order - weight(var)
-    for index in indices(freeorder,numvars):
-        if sum(index) == sum(index[d-1] for d in dir):
-            realindex = [index[i-1]+var[i-1] for i in [1..numvars]]
-            a = diff(func.subs(field(realindex,component)==target),target)
-            a = vdiff(a.subs(target==field(realindex,component)),deri(index,numvars))
-            result += (-1)^sum(index) * a
-    return result
-    
-
-#@parallel
-#def pcheck(i,j,func):
-#	out = expand(replace(func))
-#	if out == 0:
-#		return 0
-#	else:
-#		return cleantrig(out).simplify_rational()
-#	    #return trig_to_exp(out).simplify_full()
+	result = 0
+	freeorder = order - weight(var)
+	for index in indices(freeorder,numvars):
+		if sum(index) == sum(index[d-1] for d in dir):
+			realindex = [index[i-1]+var[i-1] for i in [1..numvars]]
+			a = diff(func.subs(field(realindex,component)==target),target)
+			a = vdiff(a.subs(target==field(realindex,component)),deri(index,numvars))
+			result += (-1)^sum(index) * a
+	return result
 
 def check(matrix,message="All entries = 0 mod eqns",verbose=True):
 	size = matrix.dimensions()[1]
-	#checkgen = pcheck(flatten([[(i,j,matrix[i-1,j-1]) for j in [1..size]] for i in [1..size]],max_level=1))
-    
+
 	remainder = 0*copy(matrix)
 	for i in [1..size]:
 		for j in [1..size]:
@@ -104,7 +87,7 @@ def pvarder(i,j,func,index,component=1):
 	if func == 0:
 		return 0
 	else:
-	    return varder([i,j],func,index,component)
+	    return varder([i,j],func,index,component).combine()
 
 def varders(matrix,index,edge=False,component=1):
 	eindex = [copy(index) for k in [1..lagnumvars]]
@@ -119,6 +102,7 @@ def varders(matrix,index,edge=False,component=1):
 	for i in vgen:
 		out[i[0][0][0]-1,i[0][0][1]-1] = i[1]
 	return out
+	
 ### take difference of rows
 def diff_in_columns(matrix):
 	out = copy(matrix)
@@ -142,11 +126,13 @@ def elplane(matrix,index,component=1):
 				relevantmatrix[i-1,j-1] = 0
 				relevantmatrix[j-1,i-1] = 0
 	vararray = varders(relevantmatrix,index,False,component)
+	if viewELeqs and vararray != 0*vararray:
+		textadd("Multi-time EL equations; - " + str(component) + " - " + str(index) + " - plane:")
+		latexadd(vararray)
 	if not(check(vararray,verbose=False)):
 		warning = True
 		textadd(str(index) + " - " + str(component) + " - plane")
 		check(vararray,verbose=True)
-	#return warning
 
 ### calculate multi-time EL expressions of 2nd kind
 @parallel
@@ -160,6 +146,9 @@ def eledge(matrix,index,component=1):
 					relevantmatrix[j-1,i-1] = 0
 	vararray = varders(relevantmatrix,index,True,component)
 	diffvararray = diff_in_columns(vararray)
+	if viewELeqs and vararray != 0*vararray:
+		textadd("Multi-time EL equations; - " + str(component) + " - " + str(index) + " - edge:")
+		latexadd(vararray)
 	if not(check(diffvararray,verbose=False)):
 		warning = True
 		textadd(str(index) + " - " + str(component) + " - edge")
@@ -172,33 +161,12 @@ def elcheck(matrix):
 	triang = utriang(matrix)
 	global warning
 	if elcheckdepth > -1:
-		for component in [1..components]:
-			vararray = varders(triang,[0 for i in [1..numvars]],False,component)
-			if viewELeqs:
-				textadd("Multi-time EL equations; - " + str(component) + " - plane:")
-				latexadd(vararray)
-			if not(check(vararray)):
-				warning = True
-		
-		for component in [1..components]:
-			vararray = varders(matrix,[0 for i in [1..numvars]],True,component)
-			if viewELeqs:
-				textadd("Multi-time EL equations; - " + str(component) + " - edge:")
-				latexadd(vararray)
-			diffvararray = diff_in_columns(vararray)
-			if not(check(diffvararray,"Columns agree mod eqns")):
-				warning = True
-	
-	if elcheckdepth > 0:
-		textadd("Deep EL check...")
-		#if elcheckdepth > 2:
-		#	print("elcheckdepth = " + str(elcheckdepth) + ". This could take a while...")
+		textadd("EL check...")
 		for index in indices(elcheckdepth,numvars):
 			for component in [1..components]:
 				elplane(triang,index,component)
-		#print("Half way there...")
 		for index in indices(elcheckdepth-1,numvars):
 			for component in [1..components]:
 				eledge(matrix,index,component)
 		if not(warning):
-			textadd("Deep EL check successful.")
+			textadd("EL check successful.")
