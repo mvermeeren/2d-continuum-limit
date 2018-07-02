@@ -53,9 +53,9 @@ var('target')
 def varder(dir,func,var,component=1):
 	result = 0
 	freeorder = order - weight(var)
-	for index in indices(freeorder,numvars):
-		if sum(index) == sum(index[d-1] for d in dir):
-			realindex = [index[i-1]+var[i-1] for i in [1..numvars]]
+	for index in indices(freeorder,dtnumvars):
+		if sum(index) == sum(index[d-1] for d in list(set(dir))):
+			realindex = [index[i-1]+var[i-1] for i in [1..dtnumvars]]
 			a = diff(func.subs(field(realindex,component)==target),target)
 			a = vdiff(a.subs(target==field(realindex,component)),deri(index,numvars))
 			result += (-1)^sum(index) * a
@@ -91,16 +91,27 @@ def pvarder(i,j,func,index,component=1):
 
 def varders(matrix,index,edge=False,component=1):
 	eindex = [copy(index) for k in [1..lagnumvars]]
-	for i in [1..lagnumvars]:
-		eindex[i-1][i-1] = eindex[i-1][i-1]+1
-	if edge:
-	    vgen = pvarder(flatten([[(i,j,matrix[i-1,j-1],eindex[i-1],component) for i in range(lagnumvars)] for j in [1..lagnumvars]],max_level=1))
+	if doubletime:
+		for i in [1..lagnumvars]:
+			eindex[i-1][i-1] = eindex[i-1][i-1]+1
+		if edge:
+			vgen = pvarder(flatten([[(numvars+i,j,matrix[i-1,j-1],eindex[i-1],component) for i in range(lagnumvars)] for j in [1..lagnumvars]],max_level=1))
+		else:
+			vgen = pvarder(flatten([[(numvars+i,j,matrix[i-1,j-1],index,component) for i in [1..lagnumvars]] for j in [1..lagnumvars]],max_level=1))
 	else:
-	    vgen = pvarder(flatten([[(i,j,matrix[i-1,j-1],index,component) for i in [1..lagnumvars]] for j in [1..lagnumvars]],max_level=1))
+		for i in [1..lagnumvars]:
+			eindex[i-1][i-1] = eindex[i-1][i-1]+1
+		if edge:
+			vgen = pvarder(flatten([[(i,j,matrix[i-1,j-1],eindex[i-1],component) for i in range(lagnumvars)] for j in [1..lagnumvars]],max_level=1))
+		else:
+			vgen = pvarder(flatten([[(i,j,matrix[i-1,j-1],index,component) for i in [1..lagnumvars]] for j in [1..lagnumvars]],max_level=1))
 
 	out = 0*copy(matrix)
 	for i in vgen:
-		out[i[0][0][0]-1,i[0][0][1]-1] = i[1]
+		if doubletime:
+			out[i[0][0][0]-numvars-1,i[0][0][1]-1] = i[1]
+		else:
+			out[i[0][0][0]-1,i[0][0][1]-1] = i[1]
 	return out
 	
 ### take difference of rows
@@ -162,10 +173,13 @@ def elcheck(matrix):
 	global warning
 	if elcheckdepth > -1:
 		textadd("EL check...")
-		for index in indices(elcheckdepth,numvars):
+		for index in indices(elcheckdepth,dtnumvars):
 			for component in [1..components]:
-				elplane(triang,index,component)
-		for index in indices(elcheckdepth-1,numvars):
+				if doubletime:
+					elplane(matrix,index,component)
+				else:
+					elplane(triang,index,component)
+		for index in indices(elcheckdepth-1,dtnumvars):
 			for component in [1..components]:
 				eledge(matrix,index,component)
 		if not(warning):

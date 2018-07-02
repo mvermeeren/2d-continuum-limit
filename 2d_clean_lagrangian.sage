@@ -16,14 +16,14 @@ def is_native(times,func):
 
 ### Isolate terms with alien derivatives
 #ONLY NEEDED FOR TROUBLESHOOTING?
-def alien_terms(times,func):
-	terms = summands(func)
-	gen = is_native([(times,term) for term in terms])
-	out = 0
-	for i in gen:
-		if not(i[1]):
-			out += i[0][0][1]
-	return out
+#def alien_terms(times,func):
+#	terms = summands(func)
+#	gen = is_native([(times,term) for term in terms])
+#	out = 0
+#	for i in gen:
+#		if not(i[1]):
+#			out += i[0][0][1]
+#	return out
 	
 ### Eliminate products of time derivatives
 # Adds a term that as a double zero on solutions - does not affect EL eqns
@@ -98,9 +98,11 @@ if autosimplify:
 			c[i-1] = 0
 		else:
 			c[i-1] = -integral.combine()
+elif not(c_list(switch) == None):
+	c = c_list(switch)
 	
-	textadd("Simplifying 1-form:")
-	latexadd(c)
+textadd("Simplifying 1-form:")
+latexadd(c)
 
 ### calculate d( c1 dt1 + c2 dt2 + ... )
 corr = 0*copy(triang)
@@ -127,6 +129,14 @@ for i in cleangen:
 
 ### Output
 textadd('Simplified Lagrangian:')
-latexadd(cleantriang)
-cleanlag = cleantriang - transpose(cleantriang)
+if doubletime:
+	cleanlag = copy(lagarray)
+	cleangen = double0(flatten([[(lagarray[i-1,j-1],i,j) for j in [1..lagnumvars]] for i in [1..lagnumvars]],max_level=1))
+	for i in cleangen:
+		cleanlag[i[0][0][1]-1,i[0][0][2]-1] = i[1].simplify_trig()
+	latexadd(cleanlag)
+else:
+	cleanlag = cleantriang - transpose(cleantriang)
+	latexadd(cleantriang)
+	
 elcheck(cleanlag)
