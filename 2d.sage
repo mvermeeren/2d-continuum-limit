@@ -2,6 +2,7 @@
 
 ### Import custom class for weierstrass elliptic functions
 from weierstrass import *
+import os 
 
 ### Load input
 load('2d_input.sage')
@@ -10,15 +11,26 @@ load('2d_input.sage')
 var('z')
 warning = False
 
+# v EXPERIMANTAL v
+doubletime = bool(switch == 'H3double') # Try and create a doubly infinite hierarchy
+if doubletime:
+	dt = 2
+	weights = 2*[1..numvars]
+else:
+	dt = 1
+	weights = [1..numvars]
+dtnumvars = dt*numvars
+# ^ EXPERIMANTAL ^
+
+# Set default values
 components = 1
 order = 2*numvars
 secondorder = 0
 lagnumvars = numvars
 miwaconst = -2
 squarearray = True
-constraints = []
-imposedpdes = [{},{},{}] #needs at least as many entries as components
 
+# Override default values if set in input file
 if switch in multicompontent_list:
 	components = multicompontent_list[switch]
 if switch in order_list:
@@ -31,12 +43,18 @@ if switch in miwa_list:
 	miwaconst = miwa_list[switch]
 if switch in squarearray_list:
 	squarearray = squarearray_list[switch]
-if switch in constraint_list:
-	constraints = constraint_list[switch]
-if switch in pde_list:
-	imposedpdes = pde_list[switch]
+	
+### Initizalize variables and load methods
+load('2d_auxiliaries.sage')
+load('2d_variational_calculus.sage')
+
+### Impose equations listed in input file, if any
+constraints = constraint_list(switch)
+imposedpdes = pde_list(switch)
 	
 ### Open output files
+if not os.path.exists('datadump/'):
+    os.makedirs('datadump/')
 filename = switch
 if not(delta == 0):
 	filename += '-delta'
@@ -76,10 +94,6 @@ def textadd(string,all=True):
 ### Print mission statement
 textadd('EQUATION ' + switch + ('' if delta==0 else ' with parameter ' + str(delta) ) )
 
-### Load custom methods
-load('2d_auxiliaries.sage')
-load('2d_variational_calculus.sage')
-
 ### Compute limit of equations
 load('2d_equation_limit.sage')
 
@@ -101,6 +115,8 @@ if viewpdf:
 
 ### If Lagrangians calculated and verified, write to file
 if (not(onlyequation) and not(str(L)=='0') and (not(warning) and (elcheckdepth >= numvars))):
+	if not os.path.exists('lagrangians/'):
+		os.makedirs('lagrangians/')
 	lagfile = open('lagrangians/' + filename + '-plain','w')
 	lagfile.write(str(pde))
 	lagfile.write('\n')
