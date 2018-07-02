@@ -32,7 +32,7 @@ RUNNING THE PROGRAM
 
 Execute the file '2d.sage' in SageMath, preferably version 7.5.1 or higher
 
-All input is given in the file section of '2d_input.sage'.
+All input is given in the file '2d_input.sage'.
 
 Most importantly the lattice equation needs to be specified by setting 'switch'
 and the dimension of the multi-time in which it is embedded needs to be specified 
