@@ -56,9 +56,9 @@ def varder(dir,func,var,component=1):
 	for index in indices(freeorder,dtnumvars):
 		if sum(index) == sum(index[d-1] for d in list(set(dir))):
 			realindex = [index[i-1]+var[i-1] for i in [1..dtnumvars]]
-			a = diff(func.subs(field(realindex,component)==target),target)
-			a = vdiff(a.subs(target==field(realindex,component)),deri(index,numvars))
-			result += (-1)^sum(index) * a
+			term = diff(func.subs(field(realindex,component)==target),target)
+			term = vdiff(a.subs(target==field(realindex,component)),deri(index,numvars))
+			result += (-1)^sum(index) * term
 	return result
 
 def check(matrix,message="All entries = 0 mod eqns",verbose=True):
@@ -71,7 +71,7 @@ def check(matrix,message="All entries = 0 mod eqns",verbose=True):
 			if out == 0:
 				remainder[i-1,j-1] = 0
 			else:
-				remainder[i-1,j-1] = cleantrig(out).simplify_rational()
+				remainder[i-1,j-1] = cleantrig(out)
 	if verbose:
 		if remainder == 0*remainder:
 			textadd(message)
@@ -92,19 +92,19 @@ def pvarder(i,j,func,index,component=1):
 def varders(matrix,index,edge=False,component=1):
 	eindex = [copy(index) for k in [1..lagnumvars]]
 	if doubletime:
-		for i in [1..lagnumvars]:
-			eindex[i-1][i-1] = eindex[i-1][i-1]+1
+		for i in range(lagnumvars):
+			eindex[i-1][numvars+i-1] = eindex[i-1][numvars+i-1]+1
 		if edge:
-			vgen = pvarder(flatten([[(numvars+i,j,matrix[i-1,j-1],eindex[i-1],component) for i in range(lagnumvars)] for j in [1..lagnumvars]],max_level=1))
+			vgen = pvarder(flatten([[(numvars+i,j,matrix[i-1,j-1],eindex[i-1],component) for i in range(lagnumvars)] for j in range(lagnumvars)],max_level=1))
 		else:
-			vgen = pvarder(flatten([[(numvars+i,j,matrix[i-1,j-1],index,component) for i in [1..lagnumvars]] for j in [1..lagnumvars]],max_level=1))
+			vgen = pvarder(flatten([[(numvars+i,j,matrix[i-1,j-1],index,component) for i in range(lagnumvars)] for j in range(lagnumvars)],max_level=1))
 	else:
-		for i in [1..lagnumvars]:
+		for i in range(lagnumvars):
 			eindex[i-1][i-1] = eindex[i-1][i-1]+1
 		if edge:
-			vgen = pvarder(flatten([[(i,j,matrix[i-1,j-1],eindex[i-1],component) for i in range(lagnumvars)] for j in [1..lagnumvars]],max_level=1))
+			vgen = pvarder(flatten([[(i,j,matrix[i-1,j-1],eindex[i-1],component) for i in range(lagnumvars)] for j in range(lagnumvars)],max_level=1))
 		else:
-			vgen = pvarder(flatten([[(i,j,matrix[i-1,j-1],index,component) for i in [1..lagnumvars]] for j in [1..lagnumvars]],max_level=1))
+			vgen = pvarder(flatten([[(i,j,matrix[i-1,j-1],index,component) for i in range(lagnumvars)] for j in range(lagnumvars)],max_level=1))
 
 	out = 0*copy(matrix)
 	for i in vgen:
@@ -119,8 +119,8 @@ def diff_in_columns(matrix):
 	out = copy(matrix)
 	for i in range(lagnumvars):
 		for j in range(lagnumvars):
-			if not(i==j):
-				if j==1:
+			if not(i==j) or doubletime:
+				if j==1: #first column
 					out[i-1,j-1] = matrix[range(lagnumvars)[1]-1,j-1] - matrix[i-1,j-1]
 				else:
 					out[i-1,j-1] = matrix[0,j-1] - matrix[i-1,j-1]
@@ -134,8 +134,12 @@ def elplane(matrix,index,component=1):
 	for i in [1..lagnumvars]: # eliminate irrelevant terms
 		if index[i-1] > 0:
 			for j in [1..lagnumvars]:
-				relevantmatrix[i-1,j-1] = 0
 				relevantmatrix[j-1,i-1] = 0
+				if not(doubletime):
+					relevantmatrix[i-1,j-1] = 0
+		if doubletime and index[numvars+i-1] > 0:
+			for j in [1..lagnumvars]:
+				relevantmatrix[i-1,j-1] = 0
 	vararray = varders(relevantmatrix,index,False,component)
 	if viewELeqs and vararray != 0*vararray:
 		textadd("Multi-time EL equations; - " + str(component) + " - " + str(index) + " - plane:")
@@ -153,10 +157,10 @@ def eledge(matrix,index,component=1):
 	for i in [1..lagnumvars]: # eliminate irrelevant terms
 		if index[i-1] > 0:
 			for j in [1..lagnumvars]:
-				if not(i==j):
+				if not(i==j) or doubletime:
 					relevantmatrix[j-1,i-1] = 0
 	vararray = varders(relevantmatrix,index,True,component)
-	diffvararray = diff_in_columns(vararray)
+	diffvararray = replace(diff_in_columns(vararray))
 	if viewELeqs and vararray != 0*vararray:
 		textadd("Multi-time EL equations; - " + str(component) + " - " + str(index) + " - edge:")
 		latexadd(vararray)

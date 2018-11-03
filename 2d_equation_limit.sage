@@ -50,17 +50,18 @@ sum12 = expand( dertovar( (ul(1,0) + ul(0,1)).series(a,lagnumvars+2).truncate().
 
 ### List constraints in allpde
 allpde = []
-for e in constraints:
-	for index in indices(order - 1,numvars):
-		if not( vdiff(e.lhs(),deri(index)) in [eqn.lhs() for eqn in allpde] ):  #avoid multiple substitution
-			allpde += [vdiff(e,deri(index))]
 
-### Replace time derivatives using allpde
-def replace(func,iterations=components):
+def replace(func,iterations=components*dt):
 	out = func
 	for i in [1..iterations]:
 		out = out.subs(allpde)
 	return expand(out)
+	
+for e in constraints:
+	for index in indices(order - dt,dtnumvars):
+		ediff = vdiff(e,deri(index))
+		if not( ediff.lhs() in [eqn.lhs() for eqn in allpde] ):  #avoid multiple substitution
+			allpde += [replace(ediff)]
 	
 ### Get equation (and Lagrangian) from input file
 if onlyequation:
@@ -115,61 +116,43 @@ for component in [1..components]:
 
 	latexadd(eqnarray[component-1],vieweqnarray)
 
-### function to simplify trig and ellipitc expressions (for Q3-1 resp Q4)
-def cleantrig(func):
-	old = 0
-	new = expand(func)
-	if components == 1:
-		while True:
-			if hash(new) == hash(old):
-				return old
-			else:
-				old = new
-				for k in reversed([2..numvars]):
-					new = new.subs( cos(v_)^k == (1 - sin(v_)^2)*cos(v_)^(k-2) )
-					new = new.subs(wp2p(v_)^k == (4*wp(2*v_)+8*wp(v_))*wpp(v_)^2*wp2p(v_)^(k-2) ) 
-				new = new.subs(wp2p(2*v_) == diff(wp2p(v_)/wpp(v_)*(wp(v_)-wp(2*v_)) - wpp(v_),v_)/2 )
-				new = new.subs( wpp(2*v_) == wp2p(v_)/wpp(v_)*(wp(v_)-wp(2*v_)) - wpp(v_) )
-				new = expand(new)
-	else:
-		return new
-
 ### Compile hierarchy of PDEs
 pde = [{} for i in [1..components]]
-
-for component in [1..components]:
-	for j in range(numvars)[1:]:
-		error = False
-		if components == 1:
-			derivative = 'v_' 
-		else:
-			derivative = 'v' + str(component) + '_' 
-		if component == secondorder and j == 2:
-			derivative += str(2) + str(j)
-		else:
-			derivative += str(j)
-		if eqnarray[component-1][0,j-1] == 0:
-			sols = []
-		else:
-			sols = solve(eqnarray[component-1][0,j-1] == 0, eval(derivative))
-		if len(sols) == 0:
-			error = True
 	
-		if error:
-			#textadd("No PDE for t" + str(j) + " (" + str(component) + ")")
-			pde[component-1][j] = eval(derivative) == eval(derivative)
-		else:
-			pde[component-1][j] = ( sols[0].lhs() == cleantrig(replace(sols[0].rhs())) )
+for component in [1..components]:
+	if not(doubletime):
+		for j in range(numvars)[1:]:
+			error = False
+			if components == 1:
+				derivative = 'v_' 
+			else:
+				derivative = 'v' + str(component) + '_' 
+			if component == secondorder and j == 2:
+				derivative += str(2) + str(j)
+			else:
+				derivative += str(j)
+			if eqnarray[component-1][0,j-1] == 0:
+				sols = []
+			else:
+				sols = solve(eqnarray[component-1][0,j-1] == 0, eval(derivative))
+			if len(sols) == 0:
+				error = True
+	
+			if error:
+				#textadd("No PDE for t" + str(j) + " (" + str(component) + ")")
+				pde[component-1][j] = eval(derivative) == eval(derivative)
+			else:
+				pde[component-1][j] = ( sols[0].lhs() == cleantrig(replace(sols[0].rhs())) )
 	
 	pde[component-1].update(imposedpdes[component-1])
-	
+
 	### List all differential consequences of hierarchy
-	for index in indices(order,numvars):
+	for index in indices(order,dtnumvars):
 	#for component in [1..components]:
 		add = True
 		### Determine lowest equation we can use to replace
 		lowest = 1
-		for i in reversed([3..numvars]): 
+		for i in reversed([3..numvars] + [numvars+2..dtnumvars]): 
 			if index[i-1] > 0:
 				lowest = i
 		if component == secondorder:
@@ -179,7 +162,7 @@ for component in [1..components]:
 			if index[1] > 0:
 				lowest = 2
 		### Do replacement
-		if lowest > 1:
+		if not(lowest == 1 or lowest == numvars + 1):
 			lowindex = copy(index)
 			if component == secondorder and lowest == 2:
 				lowindex[lowest-1] += -2
@@ -189,7 +172,9 @@ for component in [1..components]:
 			if not( lhs in [eqn.lhs() for eqn in allpde] ):  #avoid multiple substitution
 				rhs = replace(vdiff(pde[component-1][lowest].rhs(),deri(lowindex)))
 				allpde += [lhs == expand(cleantrig(rhs))]
-				
+	
+	allpde = [ e.lhs() == replace(e.rhs()) for e in allpde] # catch incomplete replacements
+	
 	if vieweqnarray_iterate:
 		eqnarray = [replace(i) for i in eqnarray]
 		textadd("Iteration " + str(component))
@@ -203,6 +188,8 @@ for component in [1..components]:
 
 ### Output hierarchy
 textadd('Simplified system of PDEs:')
+for c in constraints:
+	latexadd(c)
 for component in [1..components]:
 	for i in pde[component-1]:
 		latexadd(pde[component-1][i])
@@ -221,7 +208,7 @@ if double_eqn_exp:
 			warning = True
 
 ### Check commutativity
-if checkcomm and components == 1:
+if not(doubletime) and checkcomm and components == 1:
 	for component in [1..components]:
 		for i in range(numvars)[1:-1]:
 			for j in range(numvars)[2:]:
