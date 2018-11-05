@@ -11,16 +11,16 @@ load('2d_input.sage')
 var('z')
 warning = False
 
-# v EXPERIMANTAL v
-doubletime = bool(switch == 'H3double') # Try and create a doubly infinite hierarchy
+### Doubly infinite hierarchy?
+doubletime = bool(switch == 'H3double')
 if doubletime:
 	dt = 2
 	weights = 2*[1..numvars]
+	autosimplify = False #Simplification algorithm not implemented for double hierarchy
 else:
 	dt = 1
 	weights = [1..numvars]
 dtnumvars = dt*numvars
-# ^ EXPERIMANTAL ^
 
 # Set default values
 components = 1
@@ -64,20 +64,32 @@ if includeeven:
 plaindoc = open('datadump/' + filename + '-plain','w')
 latexdoc = open('datadump/' + filename + '-tex','w')
 
+
+### Customized latex function to use to export tex file
+### For immediate display, the built in latex() should be used
+def cleanlatex(eqn):
+	string = latex(eqn)
+	for power in [1..9]:
+		string = string.replace('^{'+str(power)+'}','^'+str(power))
+	string = string.replace('{v_{','v_{') 
+	string = string.replace('}}','}') 
+	string = string.replace('\, ','') 
+	string = string.replace('\left(v_{}\right)','(v)') 
+	return string
+
 ### print to latex and plaintext files
 ### if all==True, print to console and pdf as well
-w = walltime()
-output = []
+output = []	
 
 def latexadd(eqn,all=True):
 	global output
 	print ""
-	print latex(eqn)
+	print eqn
 	print ""
 	if all:
-		output += ['\\tiny ' + latex(eqn)]
+		output += ['\\scalebox{.1}{$' + latex(eqn) + '$}'] #['\\tiny ' + latex(eqn)]
 	if not(latexdoc.closed):
-		latexdoc.write(latex(eqn) + '\n\n')
+		latexdoc.write(cleanlatex(eqn) + '\n\n')
 	if not(plaindoc.closed):
 		plaindoc.write(str(eqn) + '\n\n')
 		
@@ -85,11 +97,14 @@ def textadd(string,all=True):
 	global output
 	print "%.2f" % (walltime(w)) + "s: " + string
 	if all:
-		output += [string]
+		output += [latex('') + '\\scalebox{.1}{' + string + '}']
 	if not(latexdoc.closed):
 		latexdoc.write(string + '\n\n')
 	if not(plaindoc.closed):
 		plaindoc.write(string + '\n\n')
+		
+### start timing
+w = walltime()
 
 ### Print mission statement
 textadd('EQUATION ' + switch + ('' if delta==0 else ' with parameter ' + str(delta) ) )
@@ -119,12 +134,27 @@ if (not(onlyequation) and not(str(L)=='0') and (not(warning) and (elcheckdepth >
 		os.makedirs('lagrangians/')
 	lagfile = open('lagrangians/' + filename + '-plain','w')
 	lagfile.write(str(pde))
-	lagfile.write('\n')
-	lagfile.write(str([[utriang(cleanlag)[i,j] for j in [0..lagnumvars-1]] for i in [0..lagnumvars-1]]))
+	lagfile.write('\n\n')
+	lagfile.write(str(c))
+	lagfile.write('\n\n')
+	if doubletime:
+		lagfile.write(str(cc))
+		lagfile.write('\n\n')
+		lagfile.write(str([[cleanlag[i,j] for j in [0..lagnumvars-1]] for i in [0..lagnumvars-1]]))
+	else:
+		lagfile.write(str([[utriang(cleanlag)[i,j] for j in [0..lagnumvars-1]] for i in [0..lagnumvars-1]]))
 	lagfile.close()
+	
 	lagfile = open('lagrangians/' + filename + '-tex','w')
-	lagfile.write(latex(pde))
-	lagfile.write('\n')
-	lagfile.write(latex(utriang(cleanlag)))
+	lagfile.write(cleanlatex(pde))
+	lagfile.write('\n\n')
+	lagfile.write(cleanlatex(c))
+	lagfile.write('\n\n')
+	if doubletime:
+		lagfile.write(cleanlatex(cc))
+		lagfile.write('\n\n')
+		lagfile.write(cleanlatex(cleanlag))
+	else:
+		lagfile.write(cleanlatex(utriang(cleanlag)))
 	lagfile.close()
 

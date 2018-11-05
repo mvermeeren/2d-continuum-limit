@@ -31,7 +31,7 @@ def ul(n,m,component=1):
 		if doubletime:
 			if i <= numvars:
 				times[i-1] += miwaconst * (-1)^(weights[i-1]+1)* (n/weights[i-1] * a^weights[i-1])
-			else: #only applies if doubletime
+			else:
 				times[i-1] += miwaconst * (-1)^(weights[i-1]+1)* (m/weights[i-1] * b^weights[i-1])
 		else:
 			times[i-1] += miwaconst * (-1)^(i+1)* (n/i * a^i + m/i * b^i)
@@ -73,20 +73,43 @@ for index in indices(order,length):
 			string = 'v_'
 		else:
 			string = 'v' + str(j) + '_'
-		for i in [1..length]:
+		latexstring = string + '{'
+		for i in [1..numvars]:
 			string += str(i)*index[i-1]
-		var(string)
+			latexstring += str(i)*index[i-1]
+		if doubletime:
+			string += '_'
+			for i in [1..numvars]:
+				string += str(i)*index[numvars+i-1]
+				latexstring += ('\\overline{' + str(i) + '}')*index[numvars+i-1]
+		latexstring += '}'
+		var(string, latex_name=latexstring)
 
 ### returns v-variable corresponding to given multiindex (and component)
-def field(index,i=1):
-	if components ==1:
+def dfield(index1,index2,i=1):
+	if components == 1:
 		string = 'v_'
 	else:
 		string = 'v' + str(i) + '_'
-	for i in [1..len(index)]:
-		string += str(i)*index[i-1]
+	for i in [1..len(index1)]:
+		string += str(i)*index1[i-1]
+	string += '_'
+	for i in [1..len(index2)]:
+		string += str(i)*index2[i-1]
 	return eval(string)
 
+def field(index,i=1):
+	if len(index) == 2*numvars:
+		return dfield(index[0:numvars],index[numvars:2*numvars],i)
+	else:
+		if components ==1:
+			string = 'v_'
+		else:
+			string = 'v' + str(i) + '_'
+		for i in [1..len(index)]:
+			string += str(i)*index[i-1]
+		return eval(string)
+	
 ### returns multiindex corresponding to given v-variable
 def fieldtoindex(func):
 	for index in indices(order,dtnumvars):
@@ -106,6 +129,8 @@ def dertovar(func):
 	for index in indices(order,dtnumvars):
 		for i in [1..components]:
 			func = func.subs(ul(0,0,i).diff(deri(index))==field(index,i))
+		if not('u' in str(func)): # stop if no more u variables present
+			return func
 	return func
 	
 ### converts a function of v-variables into a function of corresponding partial derivatives of u
@@ -117,6 +142,8 @@ def vartoder(func):
 	for index in indices(order,length):
 		for i in [1..components]:
 			func = func.subs(field(index,i)==ul(0,0,i).diff(deri(index)))
+		if not('_' in str(func)): # stop if no more v_ variables present
+			return func
 	return func
     
 ### takes time-derivatives on the level of v-variables
@@ -142,21 +169,30 @@ def utriang(matrix):
 		triang[i,i:] = matrix[i,i:]
 	return triang
 	
-### function to simplify trig and ellipitc expressions (for Q3-1 resp Q4)
+### function to simplify trig and ellipitc expresions
 def cleantrig(func):
-	old = 0
 	new = expand(func)
+	if doubletime:
+		new = expand(new.subs( cos(v__/2) == sin(v__)/sin(v__/2)/2 ))
+		for k in reversed([2..2*numvars]):
+			new = expand(new.subs( sin(v__/2)^k == (1-cos(v__))/2 * sin(v__/2)^(k-2) ))
+		for k in reversed([2..2*numvars]):
+			new = expand(new.subs( cos(v__)^k == (1 - sin(v__)^2) * cos(v__)^(k-2) ))
+		return expand(new)
+	old = 0
 	if components == 1:
-		while True:
+		iterations = 0
+		while iterations < numvars:
 			if hash(new) == hash(old):
 				return old
 			else:
 				old = new
-				for k in reversed([2..numvars]):
+				for k in reversed([2..2*numvars]):
 					new = new.subs( cos(v_)^k == (1 - sin(v_)^2)*cos(v_)^(k-2) )
 					new = new.subs(wp2p(v_)^k == (4*wp(2*v_)+8*wp(v_))*wpp(v_)^2*wp2p(v_)^(k-2) ) 
 				new = new.subs(wp2p(2*v_) == diff(wp2p(v_)/wpp(v_)*(wp(v_)-wp(2*v_)) - wpp(v_),v_)/2 )
 				new = new.subs( wpp(2*v_) == wp2p(v_)/wpp(v_)*(wp(v_)-wp(2*v_)) - wpp(v_) )
 				new = expand(new)
+		return func
 	else:
 		return new

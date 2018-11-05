@@ -14,24 +14,13 @@ def is_native(times,func):
 				out = False
 	return out
 
-### Isolate terms with alien derivatives
-#ONLY NEEDED FOR TROUBLESHOOTING?
-#def alien_terms(times,func):
-#	terms = summands(func)
-#	gen = is_native([(times,term) for term in terms])
-#	out = 0
-#	for i in gen:
-#		if not(i[1]):
-#			out += i[0][0][1]
-#	return out
-	
 ### Eliminate products of time derivatives
 # Adds a term that as a double zero on solutions - does not affect EL eqns
 relpde = [] #relevant equations
 fv = [] #create flow variables
 for e in allpde:
 	#if weight(fieldtoindex(e.lhs())) <= 2*numvars-3: # might be too strict
-	if weight(fieldtoindex(e.lhs())) <= 2*numvars-2: # might be too strict
+	if weight(fieldtoindex(e.lhs())) <= 2*numvars-2:
 		relpde += [e]
 		var('r' + str(e.lhs()))
 		fv += [ [eval('r' + str(e.lhs())) , weight(fieldtoindex(e.lhs())) ] ]
@@ -99,19 +88,29 @@ if autosimplify:
 		else:
 			c[i-1] = -integral.combine()
 elif not(c_list(switch) == None):
-	c = c_list(switch)
+	if doubletime:
+		c = c_list(switch)[0]
+		cc = c_list(switch)[1]
+	else:
+		c = c_list(switch)
 	
 textadd("Simplifying 1-form:")
 latexadd(c)
 
 ### calculate d( c1 dt1 + c2 dt2 + ... )
 corr = 0*copy(triang)
-for i in range(lagnumvars):
-	for j in [1..lagnumvars]:
-		if i < j:
-			corr[i-1,j-1] += vdiff(c[j-1],eval('t'+str(i)))
-		if i > j:
-			corr[j-1,i-1] += -vdiff(c[j-1],eval('t'+str(i)))
+if doubletime:
+	for i in range(lagnumvars):
+		for j in [1..lagnumvars]:
+			corr[i-1,j-1] += vdiff(c[j-1],eval('t'+str(i+numvars)))
+			corr[j-1,i-1] += vdiff(cc[j-1],eval('t'+str(i)))
+else:
+	for i in range(lagnumvars):
+		for j in [1..lagnumvars]:
+			if i < j:
+				corr[i-1,j-1] += vdiff(c[j-1],eval('t'+str(i)))
+			if i > j:
+				corr[j-1,i-1] += -vdiff(c[j-1],eval('t'+str(i)))
 
 ### Add d( c1 dt1 + c2 dt2 + ... )
 for i in [1..lagnumvars]:
@@ -125,15 +124,19 @@ for i in cleangen:
 	if func == 0:
 		cleantriang[i[0][0][1]-1,i[0][0][2]-1] = 0
 	else:
-		cleantriang[i[0][0][1]-1,i[0][0][2]-1] = func.combine()
+		if combineterms:
+			cleantriang[i[0][0][1]-1,i[0][0][2]-1] = func.combine()
+		else:
+			cleantriang[i[0][0][1]-1,i[0][0][2]-1] = func
 
 ### Output
 textadd('Simplified Lagrangian:')
 if doubletime:
-	cleanlag = copy(lagarray)
-	cleangen = double0(flatten([[(lagarray[i-1,j-1],i,j) for j in [1..lagnumvars]] for i in [1..lagnumvars]],max_level=1))
+	cleanlag = copy(lagarray) + corr
+	cleangen = double0(flatten([[(cleanlag[i-1,j-1],i,j) for j in [1..lagnumvars]] for i in [1..lagnumvars]],max_level=1))
 	for i in cleangen:
-		cleanlag[i[0][0][1]-1,i[0][0][2]-1] = i[1].simplify_trig()
+		cleanlag[i[0][0][1]-1,i[0][0][2]-1] = cleantrig(i[1])
+	cleanlag = expand(cleanlag.simplify_trig())
 	latexadd(cleanlag)
 else:
 	cleanlag = cleantriang - transpose(cleantriang)
