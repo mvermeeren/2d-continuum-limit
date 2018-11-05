@@ -30,7 +30,10 @@ and published under the MIT License (see 'LICENCE' for more details)
 
 RUNNING THE PROGRAM
 
-	This code was developed in Sage 7.5.1. In Sage 8, there is a so far unindentified bug, yielding incorrect Lagrangian limits in some cases.
+	This code was developed in Sage 7.5.1. 
+	
+	In Sage 8, there is a so far unindentified bug, 
+	yielding incorrect Lagrangian limits in some cases.
 	
 Execute the file '2d.sage' in SageMath.
 
