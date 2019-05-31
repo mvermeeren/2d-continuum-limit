@@ -32,8 +32,7 @@ RUNNING THE PROGRAM
 
 	This code was developed in Sage 7.5.1. 
 	
-	In Sage 8, there is a so far unindentified bug, 
-	yielding incorrect Lagrangian limits in some cases.
+	In Sage 8, there is a so far unindentified bug in the series expansion of very large expressions.
 	
 Execute the file '2d.sage' in SageMath.
 
